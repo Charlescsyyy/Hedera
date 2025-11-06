@@ -102,8 +102,4 @@ If you want to show the collected information, you can set the parameters in set
 
 ### Authors
 
-Brought to you by Huang MaChi (Chongqing University of Posts and Telecommunications, Chongqing, China.) and Li Cheng (Beijing University of Posts and Telecommunications. www.muzixing.com).
-
-If you have any question, email me at huangmachi@foxmail.com. Don't forget to STAR this repository!
-
-Enjoy it!
+Siyi Chen, Zeyu Ma, Sijia Qian
