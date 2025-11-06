@@ -13,43 +13,34 @@ Hedera is an SDN-based traffic scheduling application that reproduces and slight
 - **Hedera (main)** — core logic for dynamic flow scheduling.
 - **Setting** — common configuration (intervals, thresholds, logging).
 
-We use `networkx` for graph storage and shortest-path computation.
-
----
-
 
 ## Prerequisites
 
-This repository already includes vendored copies of **Mininet** and **Ryu** under.
+Before getting started with the project, ensure the following prerequisites are set up:
 
-And **Networkx** should have been installed in your machine.
-  ```bash
-  pip install networkx
-  ```
+1. **Prepare your Ubuntu environment:**
+   - Use a local Ubuntu machine or a Linux server as the working environment.
 
----
+2. **Install Mininet:**
+   - Clone Mininet from the official repository and run the installation script:
+     ```bash
+     git clone git://github.com/mininet/mininet
+     sudo mininet/util/install.sh -a
+     ```
+   - This command will clone the Mininet repository and install Mininet with all necessary dependencies.
 
-## Download
+3. **Install Ryu:**
+   - Clone the Ryu repository and install it using the following commands:
+     ```bash
+     git clone git://github.com/osrg/ryu.git
+     cd ryu
+     pip install .
+     ```
+   - These commands will clone the Ryu repository and install it via `pip`.
 
-Download files into Ryu directory. eg. 'ryu/ryu/app/Hedera'.
-
----
-
-## Reinstall Ryu
-
-You must reinstall Ryu to run the new code. In the top directory of Ryu project:
-
-```bash
-cd ryu
-sudo python setup.py install
-```
-
----
+By following the steps above, you will have Mininet and Ryu successfully installed and ready to work on the project.
 
 ## Start
-
-Update the controller IP used by the topology launcher from the placeholder `192.168.56.101` to your machine’s `eth0` (or primary NIC) IP.  
-Check with `ifconfig` / `ip addr`. If you skip this step, switches will fail to connect.
 
 1) **Start the Mininet topology** (example for fat-tree k=4):
 
@@ -64,20 +55,18 @@ cd ryu
 ryu-manager --observe-links ryu/app/Hedera/Hedera.py --k_paths=4 --weight=hop --fanout=4
 ```
 
-Or for a larger topology:
+Wait for topology discovery.
 
-```bash
-ryu-manager --observe-links ryu/app/Hedera/Hedera.py --k_paths=16 --weight=hop --fanout=8
-```
+3) **Sanity Tests** in the Mininet CLI:
 
-Wait for topology discovery. LLDP needs a few seconds to finish. Don’t interact until you see `Get network topology` in the controller terminal. It may be about 10 seconds for fattree4, and a little longer for fattree8.
+To ensure that the network environment is set up correctly and functioning as expected, conduct basic sanity tests in the Mininet CLI with the following commands:
 
-3) **Sanity tests** in the Mininet CLI:
+- **Test network connectivity**:
+  ```bash
+  mininet> pingall
 
-```text
-mininet> pingall
-mininet> iperf
-```
+  mininet> h1 iperf -s
+  mininet> h2 iperf -c h1
 
 You can toggle printed metrics and adjust timers in `setting.py`:
 
