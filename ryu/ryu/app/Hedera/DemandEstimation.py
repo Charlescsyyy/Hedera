@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
 
 def demand_estimation(flows, hostsList):
 	"""
@@ -102,15 +103,15 @@ def demandsPrinting(M, hostsList):
 	"""
 		Show the estimate results.
 	"""
-	print "********************Estimated Demands********************"
-	print
+	print("********************Estimated Demands********************")
+	print()
 	for host in hostsList:
-		print host,
-	print
-	print  '_' * 140
+		print(host, end=' ')
+	print()
+	print('_' * 140)
 	for row in hostsList:
-		print row,'|',
+		print(row, end=' | ')
 		for col in hostsList:
-			print '%.2f' % M[row][col]['demand'],
-		print
-	print
+			print('%.2f' % M[row][col]['demand'], end=' ')
+		print()
+	print()

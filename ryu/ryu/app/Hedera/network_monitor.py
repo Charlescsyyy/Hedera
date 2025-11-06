@@ -212,9 +212,9 @@ class NetworkMonitor(app_manager.RyuApp):
 					   ofproto.OFPPR_MODIFY: "modified", }
 
 		if reason in reason_dict:
-			print "switch%d: port %s %s" % (dpid, reason_dict[reason], port_no)
+			print("switch%d: port %s %s" % (dpid, reason_dict[reason], port_no))
 		else:
-			print "switch%d: Illeagal port state %s %s" % (dpid, port_no, reason)
+			print("switch%d: Illeagal port state %s %s" % (dpid, port_no, reason))
 
 	@set_ev_cls(ofp_event.EventOFPFlowStatsReply, MAIN_DISPATCHER)
 	def _flow_stats_reply_handler(self, ev):
@@ -264,7 +264,7 @@ class NetworkMonitor(app_manager.RyuApp):
 					self.flows.append({'src': src, 'dst': dst, 'demand': flowDemand,
 						'converged':False, 'receiver_limited': False,
 						'match': stat.match, 'priority': stat.priority})
-					if not self.pre_GFF_path.has_key((src, dst)):
+					if (src, dst) not in self.pre_GFF_path:
 						self.pre_GFF_path[(src, dst)] = None
 			else:
 				pass
@@ -298,11 +298,11 @@ class NetworkMonitor(app_manager.RyuApp):
 		GFF_route = None
 		for path in paths:
 			fitCheck = True
-			for i in xrange(len(path) - 1):
+			for i in range(len(path) - 1):
 				fitCheck = False
-				if self.awareness.link_to_port.has_key((path[i], path[i+1])):
+				if (path[i], path[i+1]) in self.awareness.link_to_port:
 					src_port = self.awareness.link_to_port[(path[i], path[i+1])][0]
-					if self.free_bandwidth.has_key(path[i]) and self.free_bandwidth[path[i]].has_key(src_port):
+					if path[i] in self.free_bandwidth and src_port in self.free_bandwidth[path[i]]:
 						if (self.free_bandwidth[path[i]][src_port] / setting.MAX_CAPACITY) < flow['demand']:
 							break
 						else:
@@ -345,7 +345,7 @@ class NetworkMonitor(app_manager.RyuApp):
 		first_dp = datapaths[path[0]]
 		out_port = first_dp.ofproto.OFPP_LOCAL
 		# Install flow entry for intermediate datapaths.
-		for i in xrange(1, int((len(path)-1)/2)):
+		for i in range(1, int((len(path)-1)/2)):
 			port = self.get_port_pair_from_link(link_to_port, path[i-1], path[i])
 			port_next = self.get_port_pair_from_link(link_to_port, path[i], path[i+1])
 			if port and port_next:
@@ -454,7 +454,7 @@ class NetworkMonitor(app_manager.RyuApp):
 		_len = len(path)
 		if _len > 1:
 			minimal_band_width = min_bw
-			for i in xrange(_len-1):
+			for i in range(_len-1):
 				pre, curr = path[i], path[i+1]
 				if 'bandwidth' in graph[pre][curr]:
 					bw = graph[pre][curr]['bandwidth']

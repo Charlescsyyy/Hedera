@@ -142,7 +142,8 @@ class ShortestForwarding(app_manager.RyuApp):
 			access_table = {(sw,port):(ip, mac),}
 		"""
 		if access_table:
-			if isinstance(access_table.values()[0], tuple):
+			vals = list(access_table.values())
+			if vals and isinstance(vals[0], tuple):
 				for key in access_table.keys():
 					if dst_ip == access_table[key][0]:   # Use the IP address only, not the MAC address. (hmc)
 						dst_port = key[1]
@@ -313,7 +314,7 @@ class ShortestForwarding(app_manager.RyuApp):
 		first_dp = datapaths[path[0]]
 		out_port = first_dp.ofproto.OFPP_LOCAL
 		# Install flow entry for intermediate datapaths.
-		for i in xrange(1, int((len(path) - 1) / 2)):
+		for i in range(1, int((len(path) - 1) // 2)):
 			port = self.get_port_pair_from_link(link_to_port, path[i-1], path[i])
 			port_next = self.get_port_pair_from_link(link_to_port, path[i], path[i+1])
 			if port and port_next:

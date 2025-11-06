@@ -24,8 +24,8 @@ We make use of networkx's data structure to store topology. Meanwhile, we also u
 
 The following softwares should have been installed in your machine.
 * Mininet: git clone git://github.com/mininet/mininet; mininet/util/install.sh -a
-* Ryu: git clone git://github.com/osrg/ryu.git; cd ryu; pip install .
-* Networkx: pip install networkx
+* Ryu: git clone git://github.com/osrg/ryu.git; cd ryu; python3 -m pip install .
+* Networkx: python3 -m pip install networkx
 
 
 ### Download
@@ -48,25 +48,47 @@ To register parsing parameters, you NEED to add the following code into the end 
 
 You must reinstall Ryu, so that you can run the new code. In the top directory of Ryu project:
 
-    sudo python setup.py install
+    sudo python3 setup.py install
+
+
+### Quickstart (Ubuntu 24.04 / Python 3)
+
+- Clean up any previous Mininet/OVS state (host shell):
+  - sudo mn -c
+  - for br in $(sudo ovs-vsctl list-br); do sudo ovs-vsctl --if-exists del-br "$br"; done
+  - for ns in $(ip netns list | awk '{print $1}'); do sudo ip netns del "$ns"; done
+  - ip -o link show | awk -F': ' '/@/ {print $2}' | cut -d@ -f1 | xargs -r -n1 sudo ip link del
+- Start controller (host shell, listen on 6633 to match fattree default):
+  - cd ryu
+  - python3 -m ryu.cmd.manager --ofp-tcp-listen-port 6633 --observe-links ryu/app/Hedera/Hedera.py --k_paths=4 --weight=hop --fanout=4
+    - Use --weight=bw to enable Hedera scheduling; use --weight=hop for ECMP baseline.
+- Start topology (separate host shell):
+  - sudo -E python3 ryu/app/Hedera/fattree4.py
+- Validate in the Mininet CLI:
+  - pingall
+  - iperf
+
+Notes:
+- Wait for "[GET NETWORK TOPOLOGY]" in the controller logs before running tests.
+- Links default to 10 Mbit/s; setting.MAX_CAPACITY is 10000 (Kbit/s) accordingly.
 
 
 ### Start
 
-Note: Before doing the experiment, you should change the controller's IP address from '192.168.56.101' to your own machine's eth0 IP address in the fattree.py module in each application, because '192.168.56.101' is my computer's eth0 IP address (Try 'ifconfig' in your Ubuntu to find out the eth0's IP address). Otherwise, the switches can't connect to the controller.
+Note: If your controller does not run on the same machine, change the controller IP/port passed to Ryu or modify fattree module defaults accordingly. The provided fattree defaults connect to 127.0.0.1:6633. If your Ryu listens on 6653, change the port in fattree4/8.py when calling createTopo or pass --ofp-tcp-listen-port 6633 to Ryu to match the default.
 
 Firstly, start up the network. An example is shown below:
 
-    $ sudo python ryu/ryu/app/Hedera/fattree4.py
+    $ sudo -E python3 ryu/ryu/app/Hedera/fattree4.py
 
 And then, go into the top directory of Ryu, and run the application. You are suggested to add arguments when starting Ryu. An example is shown below:
 
     $ cd ryu
-    $ ryu-manager --observe-links ryu/app/Hedera/Hedera.py --k_paths=4 --weight=hop --fanout=4
+    $ ryu-manager --ofp-tcp-listen-port 6633 --observe-links ryu/app/Hedera/Hedera.py --k_paths=4 --weight=hop --fanout=4
 
 or:
 
-    $ ryu-manager --observe-links ryu/app/Hedera/Hedera.py --k_paths=16 --weight=hop --fanout=8
+    $ ryu-manager --ofp-tcp-listen-port 6633 --observe-links ryu/app/Hedera/Hedera.py --k_paths=16 --weight=hop --fanout=8
 
 NOTE: After these, we should wait for the network to complete the initiation for several seconds, because LLDP needs some time to discovery the network topology. We can't operate the network until 'Get network topology' is printed in the terminal of the Ryu controller, otherwise, some error will occur. It may be about 10 seconds for fattree4, and a little longer for fattree8.
 

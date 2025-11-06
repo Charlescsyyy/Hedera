@@ -251,12 +251,12 @@ class NetworkAwareness(app_manager.RyuApp):
 		table = {}
 		num = 1
 		k = 1
-		for i in xrange(3001, 3001+(fanout**2)/2):
-			for j in xrange(fanout/2+1, fanout+1):
+		for i in range(3001, 3001 + (fanout ** 2) // 2):
+			for j in range(fanout // 2 + 1, fanout + 1):
 				table[(i, j)] = ('10.%d.0.%d' % (int(str(i)[-2:]), k), '00:00:00:00:00:%02x' % num)
 				num += 1
 				k += 1
-				if k == fanout / 2 + 1:
+				if k == fanout // 2 + 1:
 					k = 1
 		return table
 
@@ -287,7 +287,7 @@ class NetworkAwareness(app_manager.RyuApp):
 		paths = {}
 		# Find k shortest paths in graph.
 		for src in _graph.nodes():
-			paths.setdefault(src, {src: [[src] for i in xrange(k)]})
+			paths.setdefault(src, {src: [[src] for i in range(k)]})
 			for dst in _graph.nodes():
 				if src == dst:
 					continue
@@ -317,32 +317,32 @@ class NetworkAwareness(app_manager.RyuApp):
 		if self.pre_link_to_port != self.link_to_port and setting.TOSHOW_topo:
 			# It means the link_to_port table has changed.
 			_graph = self.graph.copy()
-			print "\n---------------------Link Port---------------------"
-			print '%6s' % ('switch'),
+			print("\n---------------------Link Port---------------------")
+			print('%6s' % ('switch'), end=' ')
 			for node in sorted([node for node in _graph.nodes()], key=lambda node: node):
-				print '%6d' % node,
-			print
+				print('%6d' % node, end=' ')
+			print()
 			for node1 in sorted([node for node in _graph.nodes()], key=lambda node: node):
-				print '%6d' % node1,
+				print('%6d' % node1, end=' ')
 				for node2 in sorted([node for node in _graph.nodes()], key=lambda node: node):
 					if (node1, node2) in self.link_to_port.keys():
-						print '%6s' % str(self.link_to_port[(node1, node2)]),
+						print('%6s' % str(self.link_to_port[(node1, node2)]), end=' ')
 					else:
-						print '%6s' % '/',
-				print
-			print
+						print('%6s' % '/', end=' ')
+				print()
+			print()
 			self.pre_link_to_port = self.link_to_port.copy()
 
 		if self.pre_access_table != self.access_table and setting.TOSHOW_topo:
 			# It means the access_table has changed.
-			print "\n----------------Access Host-------------------"
-			print '%10s' % 'switch', '%10s' % 'port', '%22s' % 'Host'
+			print("\n----------------Access Host-------------------")
+			print('%10s' % 'switch', '%10s' % 'port', '%22s' % 'Host')
 			if not self.access_table.keys():
-				print "    NO found host"
+				print("    NO found host")
 			else:
 				for sw in sorted(self.access_table.keys()):
-					print '%10d' % sw[0], '%10d      ' % sw[1], self.access_table[sw]
-			print
+					print('%10d' % sw[0], '%10d      ' % sw[1], self.access_table[sw])
+			print()
 			self.pre_access_table = self.access_table.copy()
 
 		# nx.draw(self.graph)

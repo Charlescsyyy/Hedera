@@ -32,8 +32,9 @@ def _main_module():
 def save_orig():
     """Save original easy_install.get_script_args.
     This is necessary because pbr's setup_hook is sometimes called
-    before ours."""
-    _main_module()._orig_get_script_args = easy_install.get_script_args
+    before ours.
+    On modern setuptools, easy_install.get_script_args may not exist."""
+    _main_module()._orig_get_script_args = getattr(easy_install, 'get_script_args', None)
 
 
 def setup_hook(config):
@@ -53,11 +54,14 @@ def setup_hook(config):
     # but we are in patching wars already...
     from pbr import packaging
 
-    def my_get_script_args(*args, **kwargs):
-        return _main_module()._orig_get_script_args(*args, **kwargs)
+    orig_get = getattr(_main_module(), '_orig_get_script_args', None)
+    if orig_get is not None:
+        def my_get_script_args(*args, **kwargs):
+            return orig_get(*args, **kwargs)
 
-    packaging.override_get_script_args = my_get_script_args
-    easy_install.get_script_args = my_get_script_args
+        packaging.override_get_script_args = my_get_script_args
+        if hasattr(easy_install, 'get_script_args'):
+            easy_install.get_script_args = my_get_script_args
 
     # another hack to allow setup from tarball.
     orig_get_version = packaging.get_version
