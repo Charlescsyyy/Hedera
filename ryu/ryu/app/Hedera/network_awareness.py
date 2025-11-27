@@ -164,6 +164,16 @@ class NetworkAwareness(app_manager.RyuApp):
 		self.graph = self.get_graph(self.link_to_port.keys())
 		self.shortest_paths = self.all_k_shortest_paths(
 			self.graph, weight='weight', k=CONF.k_paths)
+		
+		self.logger.debug("=== Shortest Paths ===")
+		for src in self.shortest_paths:
+			for dst in self.shortest_paths[src]:
+				if src != dst:
+					paths = self.shortest_paths[src][dst]
+					self.logger.debug(f"From {src} to {dst}:")
+					for i, path in enumerate(paths):
+						self.logger.debug(f"  Path {i+1}: {' -> '.join(map(str, path))}")
+		self.logger.debug("=== End of Shortest Paths ===")
 
 	def get_host_location(self, host_ip):
 		"""
