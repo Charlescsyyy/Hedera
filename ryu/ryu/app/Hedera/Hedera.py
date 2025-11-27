@@ -356,6 +356,7 @@ class ShortestForwarding(app_manager.RyuApp):
             or
             flow_info = (eth_type, ip_src, ip_dst, in_port, ip_proto, Flag, L4_port)
         """
+        logging.debug("Running shortest_forwarding")
         datapath = msg.datapath
         in_port = msg.match['in_port']
         pkt = packet.Packet(msg.data)

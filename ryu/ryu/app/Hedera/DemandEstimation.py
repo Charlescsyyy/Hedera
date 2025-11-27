@@ -33,21 +33,51 @@ def demand_estimation(flows, hostsList):
 	return flows
 
 def estimate_src(M, flows, src):
-	converged_demand = 0
-	unconverged_num = 0
+	"""
+	Estimate and assign demands for flows from a given source.
+
+	Behavior (scheme 1): keep measured demands when possible. Only when the
+	sum of (converged + measured-unconverged) exceeds 1.0 do we scale the
+	unconverged flows down proportionally to fit the remaining budget.
+	"""
+	converged_demand = 0.0
+	unconverged = []
 	for flow in flows:
 		if flow['src'] == src:
-			if flow['converged']:
-				converged_demand += flow['demand']
+			if flow.get('converged'):
+				converged_demand += flow.get('demand', 0.0)
 			else:
-				unconverged_num += 1
+				unconverged.append(flow)
 
-	if unconverged_num != 0:
-		equal_share = (1.0 - converged_demand) / unconverged_num
-		for flow in flows:
-			if flow['src'] == src and not flow['converged']:
-				M[flow['src']][flow['dst']]['demand'] = equal_share
-				flow['demand'] = equal_share
+	if not unconverged:
+		return
+
+	# Sum of current (measured) demands for unconverged flows
+	sum_unconv = sum(f.get('demand', 0.0) for f in unconverged)
+
+	# If no measured demand available (all zeros), fall back to equal share
+	if sum_unconv == 0.0:
+		equal_share = max((1.0 - converged_demand) / len(unconverged), 0.0)
+		for f in unconverged:
+			M[f['src']][f['dst']]['demand'] = equal_share
+			f['demand'] = equal_share
+		return
+
+	# If current measured sum fits within remaining budget, keep measurements
+	if converged_demand + sum_unconv <= 1.0:
+		for f in unconverged:
+			# ensure stored value present in M as well
+			M[f['src']][f['dst']]['demand'] = f.get('demand', 0.0)
+			# keep flow['demand'] unchanged
+		return
+
+	# Otherwise scale unconverged measured demands down proportionally
+	remaining = max(1.0 - converged_demand, 0.0)
+	scale = remaining / sum_unconv if sum_unconv > 0 else 0.0
+	for f in unconverged:
+		newd = f.get('demand', 0.0) * scale
+		M[f['src']][f['dst']]['demand'] = newd
+		f['demand'] = newd
 
 def estimate_dst(M, flows, dst):
 	total_demand = 0

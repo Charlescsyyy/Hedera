@@ -31,6 +31,7 @@ from ryu.lib import hub
 
 import setting
 from DemandEstimation import demand_estimation
+import logging
 
 
 CONF = cfg.CONF
@@ -67,6 +68,13 @@ class NetworkMonitor(app_manager.RyuApp):
 		# free bandwidth of links respectively.
 		self.monitor_thread = hub.spawn(self._monitor)
 		self.save_freebandwidth_thread = hub.spawn(self._save_bw_graph)
+
+		self.logger.setLevel(logging.DEBUG)
+		fh = logging.FileHandler('/tmp/monitor.log')
+		fh.setLevel(logging.DEBUG)
+		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		fh.setFormatter(formatter)
+		self.logger.addHandler(fh)
 
 	def _monitor(self):
 		"""
@@ -284,6 +292,7 @@ class NetworkMonitor(app_manager.RyuApp):
 		estimated_flows = demand_estimation(flows, hostsList)
 		for flow in estimated_flows:
 			if flow['demand'] > 0.1:
+				self.logger.debug("There is a flow larger than 0.1")
 				self._GlobalFirstFit(flow)
 
 	def _GlobalFirstFit(self, flow):
@@ -292,9 +301,15 @@ class NetworkMonitor(app_manager.RyuApp):
 			self.awareness.link_to_port = {(src_dpid,dst_dpid):(src_port,dst_port),}
 			self.free_bandwidth = {dpid:{port_no:free_bw,},} Unit:Kbit/s
 		'''
+		self.logger.debug(f"[GFF] Start: {flow['src']}->{flow['dst']}, demand={flow['demand']}")
+		
 		src_dp = self.awareness.get_host_location(flow['src'])[0]
 		dst_dp = self.awareness.get_host_location(flow['dst'])[0]
+		self.logger.debug(f"[GFF] Switches: {src_dp}->{dst_dp}")
+		
 		paths = self.awareness.shortest_paths.get(src_dp).get(dst_dp)
+		self.logger.debug(f"[GFF] Checking {len(paths)} paths")
+		
 		GFF_route = None
 		for path in paths:
 			fitCheck = True
@@ -304,6 +319,7 @@ class NetworkMonitor(app_manager.RyuApp):
 					src_port = self.awareness.link_to_port[(path[i], path[i+1])][0]
 					if path[i] in self.free_bandwidth and src_port in self.free_bandwidth[path[i]]:
 						if (self.free_bandwidth[path[i]][src_port] / setting.MAX_CAPACITY) < flow['demand']:
+							self.logger.debug(f"[GFF] Link {path[i]}->{path[i+1]} insufficient BW")
 							break
 						else:
 							fitCheck = True
@@ -312,10 +328,13 @@ class NetworkMonitor(app_manager.RyuApp):
 				GFF_route = path
 				self.logger.info("[GFF PATH]%s<-->%s: %s" % (flow['src'], flow['dst'], path))
 				break
+				
 		if GFF_route:
 			# Install new GFF_path flow entries.
-			self.logger.info("[GFF INSTALLING]%s<-->%s: %s" % (flow['src'], flow['dst'], path))
-			self. _install_GFF_path(GFF_route, flow['match'], flow['priority'])
+			self.logger.info("[GFF INSTALLING]%s<-->%s: %s" % (flow['src'], flow['dst'], GFF_route))
+			self._install_GFF_path(GFF_route, flow['match'], flow['priority'])
+		else:
+			self.logger.debug("[GFF] No suitable path found")
 
 	def _install_GFF_path(self, GFF_route, match, priority):
 		'''

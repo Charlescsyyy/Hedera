@@ -36,6 +36,7 @@ from ryu.topology import event
 from ryu.topology.api import get_switch, get_link
 
 import setting
+import logging
 
 
 CONF = cfg.CONF
@@ -79,6 +80,14 @@ class NetworkAwareness(app_manager.RyuApp):
 
 		# Start a green thread to discover network resource.
 		self.discover_thread = hub.spawn(self._discover)
+
+		# log debug
+		self.logger.setLevel(logging.DEBUG)
+		fh = logging.FileHandler('/tmp/network_awareness.log')
+		fh.setLevel(logging.DEBUG)
+		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		fh.setFormatter(formatter)
+		self.logger.addHandler(fh)
 
 	def _discover(self):
 		i = 0
@@ -155,25 +164,43 @@ class NetworkAwareness(app_manager.RyuApp):
 			return
 
 		self.logger.info("[GET NETWORK TOPOLOGY]")
+		
 		switch_list = get_switch(self.topology_api_app, None)
+		self.logger.debug(f"Got {len(switch_list)} switches")
+		
 		self.create_port_map(switch_list)
+		self.logger.debug("Port map created")
+		
 		self.switches = [sw.dp.id for sw in switch_list]
+		self.logger.debug(f"Switch list: {self.switches}")
+		
 		links = get_link(self.topology_api_app, None)
+		self.logger.debug(f"Got {len(links)} links")
+		
 		self.create_interior_links(links)
+		self.logger.debug("Interior links created")
+		
 		self.create_access_ports()
+		self.logger.debug("Access ports created")
+		
 		self.graph = self.get_graph(self.link_to_port.keys())
+		self.logger.debug(f"Graph: {self.graph.number_of_nodes()} nodes, {self.graph.number_of_edges()} edges")
+		
 		self.shortest_paths = self.all_k_shortest_paths(
 			self.graph, weight='weight', k=CONF.k_paths)
+		self.logger.debug("Shortest paths calculated")
 		
-		self.logger.debug("=== Shortest Paths ===")
-		for src in self.shortest_paths:
-			for dst in self.shortest_paths[src]:
-				if src != dst:
-					paths = self.shortest_paths[src][dst]
-					self.logger.debug(f"From {src} to {dst}:")
-					for i, path in enumerate(paths):
-						self.logger.debug(f"  Path {i+1}: {' -> '.join(map(str, path))}")
-		self.logger.debug("=== End of Shortest Paths ===")
+		# self.logger.debug("=== Shortest Paths ===")
+		# for src in self.shortest_paths:
+		# 	for dst in self.shortest_paths[src]:
+		# 		if src != dst:
+		# 			paths = self.shortest_paths[src][dst]
+		# 			self.logger.debug(f"From {src} to {dst}:")
+		# 			for i, path in enumerate(paths):
+		# 				self.logger.debug(f"  Path {i+1}: {' -> '.join(map(str, path))}")
+		# self.logger.debug("=== End of Shortest Paths ===")
+		
+		self.logger.info("[TOPOLOGY DISCOVERY COMPLETED]")
 
 	def get_host_location(self, host_ip):
 		"""
